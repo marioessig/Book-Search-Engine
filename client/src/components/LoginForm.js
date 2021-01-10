@@ -1,90 +1,98 @@
 // see SignupForm.js for comments
-import React, { useState } from 'react';
-import { Form, Button, Alert } from 'react-bootstrap';
+import React, { useState } from "react";
 
-import { loginUser } from '../utils/API';
-import Auth from '../utils/auth';
+// These imports take the submitted data and send it to the server.
+import { useMutation } from "@apollo/react-hooks";
+import { LOGIN_USER } from "../utils/mutations";
+
+// This import takes care of token validation/storage
+import Auth from "../utils/auth";
+
+import { Form, Button } from "react-bootstrap";
 
 const LoginForm = () => {
-  const [userFormData, setUserFormData] = useState({ email: '', password: '' });
-  const [validated] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
+  const [formState, setFormState] = useState({ email: "", password: "" });
 
-  const handleInputChange = (event) => {
+  // returns the 'login' function
+  const [login, { error }] = useMutation(LOGIN_USER);
+
+  // Update the state based on any form input changes
+  const handleChange = (event) => {
     const { name, value } = event.target;
-    setUserFormData({ ...userFormData, [name]: value });
+
+    setFormState({
+      ...formState,
+      [name]: value,
+    });
   };
 
+  // Submit the form
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
-    // check if form has everything (as per react-bootstrap docs)
-    const form = event.currentTarget;
-    if (form.checkValidity() === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
+    // Use try/catch instead of promises to handle errors
     try {
-      const response = await loginUser(userFormData);
+      // Execute the 'login' mutation and pass in variable data from the form
+      const { data } = await login({
+        variables: { ...formState },
+      });
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      const { token, user } = await response.json();
-      console.log(user);
-      Auth.login(token);
-    } catch (err) {
-      console.error(err);
-      setShowAlert(true);
+      Auth.login(data.login.token);
+    } catch (e) {
+      console.error(e);
     }
 
-    setUserFormData({
-      username: '',
-      email: '',
-      password: '',
+    // clear form values
+    setFormState({
+      email: "",
+      password: "",
     });
   };
 
   return (
     <>
-      <Form noValidate validated={validated} onSubmit={handleFormSubmit}>
-        <Alert dismissible onClose={() => setShowAlert(false)} show={showAlert} variant='danger'>
+      <Form onSubmit={handleFormSubmit}>
+        {/* <Alert dismissible onClose={() => setShowAlert(false)} show={showAlert} variant='danger'>
           Something went wrong with your login credentials!
-        </Alert>
+        </Alert> */}
         <Form.Group>
-          <Form.Label htmlFor='email'>Email</Form.Label>
+          <Form.Label htmlFor="email">Email</Form.Label>
           <Form.Control
-            type='text'
-            placeholder='Your email'
-            name='email'
-            onChange={handleInputChange}
-            value={userFormData.email}
+            type="text"
+            placeholder="Your email"
+            name="email"
+            onChange={handleChange}
+            value={formState.email}
             required
           />
-          <Form.Control.Feedback type='invalid'>Email is required!</Form.Control.Feedback>
+          <Form.Control.Feedback type="invalid">
+            Email is required!
+          </Form.Control.Feedback>
         </Form.Group>
 
         <Form.Group>
-          <Form.Label htmlFor='password'>Password</Form.Label>
+          <Form.Label htmlFor="password">Password</Form.Label>
           <Form.Control
-            type='password'
-            placeholder='Your password'
-            name='password'
-            onChange={handleInputChange}
-            value={userFormData.password}
+            type="password"
+            placeholder="Your password"
+            name="password"
+            onChange={handleChange}
+            value={formState.password}
             required
           />
-          <Form.Control.Feedback type='invalid'>Password is required!</Form.Control.Feedback>
+          <Form.Control.Feedback type="invalid">
+            Password is required!
+          </Form.Control.Feedback>
         </Form.Group>
         <Button
-          disabled={!(userFormData.email && userFormData.password)}
-          type='submit'
-          variant='success'>
+          disabled={!(formState.email && formState.password)}
+          type="submit"
+          variant="success"
+        >
           Submit
         </Button>
       </Form>
+      {error && <div>Login failed</div>}
     </>
   );
 };
