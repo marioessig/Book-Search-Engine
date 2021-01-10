@@ -10,19 +10,27 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true
     },
     email: {
       type: String,
       required: true,
       unique: true,
-      match: [/.+@.+\..+/, 'Must use a valid email address'],
+      match: [/.+@.+\..+/, "Must use a valid email address"],
     },
     password: {
       type: String,
       required: true,
+      minlength: 5
     },
     // set savedBooks to be an array of data that adheres to the bookSchema
     savedBooks: [bookSchema],
+  },
+  // use getters
+  {
+    toJSON: {
+      getters: true,
+    },
   },
   // set this to use virtual below
   {
